@@ -13,4 +13,6 @@ func main() {
 	m := thread.Thread_ichiran()
 	fmt.Printf("%T %v\n", m, len(m))
 
+	thread.Thread_text()
+
 }
