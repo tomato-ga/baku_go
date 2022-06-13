@@ -1,93 +1,55 @@
 package thread
 
-import (
-	"fmt"
-	"log"
-	"net/http"
+// const domain string = "https://bakusai.com/"
 
-	"github.com/PuerkitoBio/goquery"
-)
+// var get_ichiran_count int = 0
+// var thread_urls = make(map[string]string)
+// var comments = make(map[int]string)
 
-const domain string = "https://bakusai.com/"
+// func Thread_ichiran() map[string]string {
 
-var get_ichiran_count int = 0
-var thread_urls = make(map[string]string)
-var comments = make(map[int]string)
+// 	res, err := http.Get("https://bakusai.com/thr_tl/acode=3/ctgid=136/bid=2027/")
 
-func Thread_ichiran() map[string]string {
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	defer res.Body.Close()
 
-	res, err := http.Get("https://bakusai.com/thr_tl/acode=3/ctgid=136/bid=2027/")
+// 	if res.StatusCode != 200 {
+// 		log.Fatalf(res.Status)
+// 	}
+// 	response, err := goquery.NewDocumentFromReader(res.Body)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
 
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer res.Body.Close()
+// 	threads := response.Find("div.lSideColumn")
 
-	if res.StatusCode != 200 {
-		log.Fatalf(res.Status)
-	}
-	response, err := goquery.NewDocumentFromReader(res.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+// 	nexts, ok := response.Find(".paging_nextlink_btn > a").Attr("href")
+// 	fmt.Println(nexts)
 
-	threads := response.Find("div.lSideColumn")
+// 	if ok {
+// 		fmt.Println("[next!!!!!!!!!!!!!!]:\n", nexts, ok)
+// 		//Nexts_ichiran(nexts)
+// 		get_ichiran_count++
+// 	}
 
-	nexts, ok := response.Find(".paging_nextlink_btn > a").Attr("href")
-	fmt.Println(nexts)
+// 	threads.Find("a").Each(func(index int, item *goquery.Selection) {
 
-	if ok {
-		fmt.Println("[next!!!!!!!!!!!!!!]:\n", nexts, ok)
-		//Nexts_ichiran(nexts)
-		get_ichiran_count++
-	}
+// 		href, _ := item.Attr("href")
+// 		thread_title := item.Text()
 
-	threads.Find("a").Each(func(index int, item *goquery.Selection) {
+// 		fmt.Println(thread_title)
+// 		fmt.Println(href)
+// 		thread_urls[thread_title] = href
+// 	})
 
-		href, _ := item.Attr("href")
-		thread_title := item.Text()
+// 	return thread_urls
+// }
 
-		fmt.Println(thread_title)
-		fmt.Println(href)
-		thread_urls[thread_title] = href
-	})
+// func Nexts_ichiran(nexts string) {
 
-	return thread_urls
-}
+// 	next_url := domain + nexts
+// 	fmt.Println(next_url)
 
-func Nexts_ichiran(nexts string) {
-
-	next_url := domain + nexts
-	fmt.Println(next_url)
-
-}
-
-func Thread_text() {
-
-	res, err := http.Get("https://bakusai.com/thr_res/acode=3/ctgid=136/bid=2027/tid=10474189/tp=1/")
-	// TODO ↑のURLにとってきたスレッドURLを入れる
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != 200 {
-		log.Fatalf(res.Status)
-	}
-	response, err := goquery.NewDocumentFromReader(res.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// コメント取得
-
-	comment := response.Find(".article")
-	comment.Each(func(index int, item *goquery.Selection) {
-
-		comment := item.Text()
-
-		fmt.Println(comment)
-		comments[index] = comment
-	})
-}
+// }
