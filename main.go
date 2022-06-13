@@ -11,45 +11,65 @@ import (
 
 const (
 	BASE_URL           = "https://bakusai.com/"
-	BASE_THREADTOP_URL = "https://bakusai.com/thr_tl/acode=3/ctgid=136/bid=2027/"
+	BASE_THREADTOP_URL = "thr_tl/acode=3/ctgid=136/bid=2027/"
 )
 
 var (
-	get_ichiran_count int = 0
-	thread_urls       []string
-	comments          = make(map[int]string)
+	get_ichiran_count  int = 0
+	maxThreadPageCount int = 2
+	thread_urls        []string
+	comments           map[int]string
+	next_url           string
 )
 
 func main() {
 
 	// var threadUrlpool []string
-	next_url := ThreadnextURL(BASE_THREADTOP_URL)    //・スレッドの2ページ目のURLを取得
-	thread_urls := Threadichiran(BASE_THREADTOP_URL) //スレッド一覧の1ページ目のURLを全部取得
+	thread_urls := Threadichiran(BASE_URL + BASE_THREADTOP_URL)     //スレッド一覧の1ページ目のURLを全部取得
+	next_url := ThreadichiranNextURL(BASE_URL + BASE_THREADTOP_URL) //・スレッドの2ページ目のURLを取得
+
 	fmt.Println("[main]:", thread_urls, "スレッドは", len(thread_urls), "件です")
 
 	// スレッドのURLを一覧ページから取得する
 	for {
-		url := ThreadnextURL(BASE_URL + next_url)
+		thread_urls = Threadichiran(BASE_URL + next_url)
 		time.Sleep(1)
-		thread_urls := Threadichiran(BASE_URL + url)
+		next_url = ThreadichiranNextURL(BASE_URL + next_url)
 		time.Sleep(1)
 		fmt.Println("[main] forループ中", thread_urls, "スレッドは", len(thread_urls), "件です")
 
-		if url == "" {
+		if next_url == "" {
 			break
-		} else if get_ichiran_count >= 4 {
+		} else if get_ichiran_count >= maxThreadPageCount {
 			break
 		}
 	}
 
 	// スレッドURLへアクセスして中身を取得する
+	for _, u := range thread_urls {
+		comments := ThreadGetText(BASE_URL + u)
+		time.Sleep(1)
+		np := ThreadGetNext(BASE_URL + u)
+		time.Sleep(1)
+		fmt.Println(np)
+		fmt.Println(comments)
+
+		for {
+			comments = ThreadGetText(BASE_URL + np)
+			np = ThreadGetNext(BASE_URL + np)
+			if np == "" {
+				break
+			}
+			fmt.Println(comments)
+		}
+	}
 
 }
 
 //スレッド一覧からURLを取得する
-func Threadichiran(BASE_THREADTOP_URL string) []string {
+func Threadichiran(turl string) []string {
 
-	res, err := http.Get(BASE_THREADTOP_URL)
+	res, err := http.Get(turl)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -65,17 +85,10 @@ func Threadichiran(BASE_THREADTOP_URL string) []string {
 
 	threads := response.Find("div.lSideColumn")
 
-	// next_url, ok := response.Find(".paging_nextlink_btn > a").Attr("href")
-	// fmt.Println(next_url)
-
-	// if ok {
-	// 	fmt.Println("[next!!!!!!!!!!!!!!]:\n", next_url, ok)
-	// 	get_ichiran_count++
-	// }
-
 	threads.Find("a").Each(func(index int, item *goquery.Selection) {
-
+		thread_title := item.Text()
 		href, _ := item.Attr("href")
+		fmt.Println(thread_title)
 
 		//fmt.Println("[Threadichiran]:", href)
 		thread_urls = append(thread_urls, href)
@@ -84,10 +97,9 @@ func Threadichiran(BASE_THREADTOP_URL string) []string {
 	return thread_urls
 }
 
-func Thread_text() {
+func ThreadGetText(thread_parse_url string) (comments map[int]string) {
 
-	res, err := http.Get("https://bakusai.com/thr_res/acode=3/ctgid=136/bid=2027/tid=10474189/tp=1/")
-	// TODO ↑のURLにとってきたスレッドURLを入れる
+	res, err := http.Get(thread_parse_url)
 
 	if err != nil {
 		log.Fatal(err)
@@ -104,38 +116,41 @@ func Thread_text() {
 
 	// コメント取得
 
+	comments = make(map[int]string) // 初期化
 	comment := response.Find(".article")
 	comment.Each(func(index int, item *goquery.Selection) {
-
 		comment := item.Text()
-
-		fmt.Println(comment)
 		comments[index] = comment
 	})
+	return comments
 }
 
-// //次へのリンクを取得する
-// func ThreadnextUrl(current string) (url string) {
-// 	fmt.Printf("############ url: %s\n", current)
-// 	doc, err := goquery.NewDocument(current)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
+func ThreadGetNext(thread_parse_url string) (thread_next_page string) {
+	res, err := http.Get(thread_parse_url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		log.Fatalf(res.Status)
+	}
 
-// 	var exist bool
-// 	doc.Find("######").Each(func(_ int, s *goquery.Selection) {
+	response, err := goquery.NewDocumentFromReader(res.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	thread_next_page, exist := response.Find(".paging_nextlink_btn > a").Attr("href")
 
-// 		url, exist = s.Attr("href")
-// 	})
-// 	if !exist {
-// 		return ""
-// 	}
-// 	return
-// }
+	if exist {
+		fmt.Println("[ThradnextURL]", thread_next_page)
+	}
 
-func ThreadnextURL(BASE_THREADTOP_URL string) string {
+	return thread_next_page
+}
 
-	res, err := http.Get(BASE_THREADTOP_URL)
+func ThreadichiranNextURL(nexts string) string {
+
+	res, err := http.Get(nexts)
 	if err != nil {
 		log.Fatal(err)
 	}
