@@ -16,14 +16,21 @@ const (
 
 var (
 	get_ichiran_count  int = 0
-	maxThreadPageCount int = 2
+	maxThreadPageCount int = 1
 	thread_urls        []string
-	comments           map[int]string
-	next_url           string
+	//comments           map[int]string
+	next_url string
 )
+
+type thread_info struct {
+	Shopname string
+	Url      string
+	Text     []string
+}
 
 func main() {
 
+	now := time.Now()
 	// var threadUrlpool []string
 	thread_urls := Threadichiran(BASE_URL + BASE_THREADTOP_URL)     //スレッド一覧の1ページ目のURLを全部取得
 	next_url := ThreadichiranNextURL(BASE_URL + BASE_THREADTOP_URL) //・スレッドの2ページ目のURLを取得
@@ -47,23 +54,28 @@ func main() {
 
 	// スレッドURLへアクセスして中身を取得する
 	for _, u := range thread_urls {
-		comments := ThreadGetText(BASE_URL + u)
+		comm, _, _ := ThreadGetText(BASE_URL + u)
 		time.Sleep(1)
 		np := ThreadGetNext(BASE_URL + u)
 		time.Sleep(1)
-		fmt.Println(np)
-		fmt.Println(comments)
+		fmt.Println("[main]", comm)
+		if comm == nil {
+			break
+		}
 
 		for {
-			comments = ThreadGetText(BASE_URL + np)
+			comm, shop_title, thread_parse_url := ThreadGetText(BASE_URL + np)
+			shop_info := thread_info{Shopname: shop_title, Url: thread_parse_url, Text: comm}
+			fmt.Println("[shop_info]:", shop_info)
+
 			np = ThreadGetNext(BASE_URL + np)
 			if np == "" {
 				break
 			}
-			fmt.Println(comments)
 		}
 	}
 
+	fmt.Printf("経過: %vms\n", time.Since(now).Seconds())
 }
 
 //スレッド一覧からURLを取得する
@@ -97,7 +109,7 @@ func Threadichiran(turl string) []string {
 	return thread_urls
 }
 
-func ThreadGetText(thread_parse_url string) (comments map[int]string) {
+func ThreadGetText(thread_parse_url string) ([]string, string, string) {
 
 	res, err := http.Get(thread_parse_url)
 
@@ -116,16 +128,49 @@ func ThreadGetText(thread_parse_url string) (comments map[int]string) {
 
 	// コメント取得
 
-	comments = make(map[int]string) // 初期化
+	var comm []string
+	//com := []string{}
+	shop_title := response.Find(".title_thr_wrap ").Text()
 	comment := response.Find(".article")
+
 	comment.Each(func(index int, item *goquery.Selection) {
 		comment := item.Text()
-		comments[index] = comment
+		comm = append(comm, comment)
+		fmt.Println(comm)
 	})
-	return comments
+
+	return comm, shop_title, thread_parse_url
 }
 
-func ThreadGetNext(thread_parse_url string) (thread_next_page string) {
+// func ThreadGetText(thread_parse_url string) (comments map[int]string) {
+
+// 	res, err := http.Get(thread_parse_url)
+
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	defer res.Body.Close()
+
+// 	if res.StatusCode != 200 {
+// 		log.Fatalf(res.Status)
+// 	}
+// 	response, err := goquery.NewDocumentFromReader(res.Body)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+
+// 	// コメント取得
+
+// 	comments = make(map[int]string) // 初期化
+// 	comment := response.Find(".article")
+// 	comment.Each(func(index int, item *goquery.Selection) {
+// 		comment := item.Text()
+// 		comments[index] = comment
+// 	})
+// 	return comments
+// }
+
+func ThreadGetNext(thread_parse_url string) string {
 	res, err := http.Get(thread_parse_url)
 	if err != nil {
 		log.Fatal(err)
@@ -142,7 +187,9 @@ func ThreadGetNext(thread_parse_url string) (thread_next_page string) {
 	thread_next_page, exist := response.Find(".paging_nextlink_btn > a").Attr("href")
 
 	if exist {
-		fmt.Println("[ThradnextURL]", thread_next_page)
+		fmt.Println("[ThreadGetNext]", thread_next_page)
+	} else if exist == false {
+		return ""
 	}
 
 	return thread_next_page
