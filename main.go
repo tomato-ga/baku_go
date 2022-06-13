@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	// TODO mongoDBと接続→structをJSONにして保存できるか確認する
 )
 
 const (
@@ -128,8 +129,7 @@ func ThreadGetText(thread_parse_url string) ([]string, string, string) {
 
 	// コメント取得
 
-	var comm []string
-	//com := []string{}
+	var comm []string // TODO #1からソートさせる #をとって数字をintにしてソート？ ブログ投稿するときには#入れればいい
 	shop_title := response.Find(".title_thr_wrap ").Text()
 	comment := response.Find(".article")
 
