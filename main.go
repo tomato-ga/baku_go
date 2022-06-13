@@ -142,34 +142,6 @@ func ThreadGetText(thread_parse_url string) ([]string, string, string) {
 	return comm, shop_title, thread_parse_url
 }
 
-// func ThreadGetText(thread_parse_url string) (comments map[int]string) {
-
-// 	res, err := http.Get(thread_parse_url)
-
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer res.Body.Close()
-
-// 	if res.StatusCode != 200 {
-// 		log.Fatalf(res.Status)
-// 	}
-// 	response, err := goquery.NewDocumentFromReader(res.Body)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	// コメント取得
-
-// 	comments = make(map[int]string) // 初期化
-// 	comment := response.Find(".article")
-// 	comment.Each(func(index int, item *goquery.Selection) {
-// 		comment := item.Text()
-// 		comments[index] = comment
-// 	})
-// 	return comments
-// }
-
 func ThreadGetNext(thread_parse_url string) string {
 	res, err := http.Get(thread_parse_url)
 	if err != nil {
