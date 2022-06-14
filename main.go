@@ -14,7 +14,7 @@ import (
 
 const (
 	BASE_URL           = "https://bakusai.com/"
-	BASE_THREADTOP_URL = "thr_tl/acode=3/ctgid=136/bid=2027/"
+	BASE_THREADTOP_URL = "/thr_tl/acode=3/ctgid=136/bid=2027/" //"thr_tl/acode=3/ctgid=134/bid=4313/"
 )
 
 var (
@@ -22,6 +22,7 @@ var (
 	maxThreadPageCount int = 1
 	thread_urls        []string
 	next_url           string
+	get_thread_count   int = 0
 )
 
 type thread_info struct {
@@ -32,7 +33,7 @@ type thread_info struct {
 
 func main() {
 
-	var appendtext [][]map[int]string
+	appendtext := make([][]map[int]string, 0)
 	now := time.Now()
 	thread_urls := Threadichiran(BASE_URL + BASE_THREADTOP_URL)     //スレッド一覧の1ページ目のURLを全部取得
 	next_url := ThreadichiranNextURL(BASE_URL + BASE_THREADTOP_URL) //・スレッドの2ページ目のURLを取得
@@ -58,12 +59,14 @@ func main() {
 
 	// スレッドURLへアクセスして中身を取得する
 	for _, u := range thread_urls {
+		get_thread_count++
 		comm_map, _, _ := ThreadGetText(BASE_URL + u)
 		time.Sleep(1)
 		np := ThreadGetNext(BASE_URL + u)
 		time.Sleep(1)
 		fmt.Println("[main]", comm_map)
 		appendtext = append(appendtext, comm_map)
+
 		if comm_map == nil {
 			break
 		} else if len(comm_map) == 0 {
@@ -84,6 +87,7 @@ func main() {
 		}
 	}
 	fmt.Printf("経過: %vms\n", time.Since(now).Seconds())
+	fmt.Println(get_thread_count, "件とりました")
 }
 
 //スレッド一覧からURLを取得する
@@ -133,10 +137,9 @@ func ThreadGetText(thread_parse_url string) ([]map[int]string, string, string) {
 	// コメント取得
 	var comm []string // TODO #1からソートさせる #をとって数字をintにしてソート？ ブログ投稿するときには#入れればいい
 	var m_comm []map[int]string
-	//m_comm := make([]map[int]string, 1000)
 
 	shop_title := response.Find(".title_thr_wrap ").Text()
-	comment := response.Find(".article")
+	comment := response.Find(".article > .body > .resbody")
 
 	comment.Each(func(index int, item *goquery.Selection) {
 		comment := item.Text()
@@ -146,36 +149,26 @@ func ThreadGetText(thread_parse_url string) ([]map[int]string, string, string) {
 
 	// 正規表現でソートさせる
 	for _, cc := range comm {
-		r_number := regexp.MustCompile(`(\d{1,4})`)                                     // #を含む数字だけ取得する
-		r_time := regexp.MustCompile(`([0-9]{4}/[0-9]{2}/[0-9]{2}\ [0-9]{2}:[0-9]{2})`) // 2022/06/06の形式にマッチする日付だけ取得する
+		r_number := regexp.MustCompile(`(\d{1,4})`) // #を含む数字だけ取得する
 		res_number := r_number.FindString(cc)
-		res_time := r_time.FindString(cc)
+		//r_time := regexp.MustCompile(`([0-9]{4}/[0-9]{2}/[0-9]{2}\ [0-9]{2}:[0-9]{2})`) // 2022/06/06の形式にマッチする日付だけ取得する
+		//res_time := r_time.FindString(cc)
 
-		sub := regexp.MustCompile(` `)
-		split := sub.Split(cc, -1)
-		r_time_delete := regexp.MustCompile(`([0-9]{2}:[0-9]{2})`)
-		r_tokumei_delete := regexp.MustCompile(`(\[匿名さん\])`)
-		res_timedelete_text := r_time_delete.ReplaceAllString(split[1], "")
-		if res_timedelete_text == "" {
-			res_timedelete_text = "."
-		}
-		res_time_tokumeidelete_text := r_tokumei_delete.ReplaceAllString(res_timedelete_text, "")
-		if res_time_tokumeidelete_text == "" {
-			res_time_tokumeidelete_text = "."
-		}
-		fmt.Println(split)
-		fmt.Println(res_time_tokumeidelete_text)
-		fmt.Println(res_number, res_time)
-		res_mix := res_time + "," + res_time_tokumeidelete_text
+		// sub := regexp.MustCompile(` `)
+		// split := sub.Split(cc, -1)
+
+		// r_time_delete := regexp.MustCompile(`([0-9]{2}:[0-9]{2})`)
+		// r_tokumei_delete := regexp.MustCompile(`(\[匿名さん\])`)
+		// res_timedelete_text := r_time_delete.ReplaceAllString(split[1], "")
+		// res_time_tokumeidelete_text := r_tokumei_delete.ReplaceAllString(res_timedelete_text, "")
+		// res_mix := res_time + "," + res_time_tokumeidelete_text
+		//texts := split[0]
 
 		res_number_convert, _ := strconv.Atoi(res_number) // str→int変換
-		fmt.Println(res_mix)
-		fmt.Println(res_number_convert)
-
-		m_comm = append(m_comm, map[int]string{res_number_convert: res_mix})
-		fmt.Println(m_comm)
+		m_comm = append(m_comm, map[int]string{res_number_convert: cc})
 	}
-
+	fmt.Println(m_comm)
+	fmt.Println(thread_parse_url)
 	return m_comm, shop_title, thread_parse_url
 }
 
