@@ -1,3 +1,9 @@
+/*
+1.スレッドにURLでアクセス
+2.スレッド一覧のURLを取得
+
+
+*/
 package main
 
 import (
@@ -21,31 +27,31 @@ var (
 	get_ichiran_count  int = 0
 	maxThreadPageCount int = 1
 	thread_urls        []string
-	next_url           string
-	get_thread_count   int = 0
+	get_thread_count int = 0
 )
 
 type thread_info struct {
 	Shopname string
 	Url      string
-	Text     [][]map[int]string
+	Text     [][]map[int]string //TODO interfaceにする
 }
 
 func main() {
 
 	appendtext := make([][]map[int]string, 0)
 	now := time.Now()
-	thread_urls := Threadichiran(BASE_URL + BASE_THREADTOP_URL)     //スレッド一覧の1ページ目のURLを全部取得
+	thread_urls := Threadichiran(BASE_URL + BASE_THREADTOP_URL) //スレッド一覧の1ページ目のURLを全部取得
+	time.Sleep(5 * time.Second)
 	next_url := ThreadichiranNextURL(BASE_URL + BASE_THREADTOP_URL) //・スレッドの2ページ目のURLを取得
+	time.Sleep(5 * time.Second)
 	fmt.Println("[main]:", thread_urls, "スレッドは", len(thread_urls), "件です")
 
 	// スレッドのURLを一覧ページから取得する
-
 	for {
 		thread_urls = Threadichiran(BASE_URL + next_url)
-		time.Sleep(1)
+		time.Sleep(5 * time.Second)
 		next_url = ThreadichiranNextURL(BASE_URL + next_url)
-		time.Sleep(1)
+		time.Sleep(5 * time.Second)
 		fmt.Println("[main] forループ中", thread_urls, "スレッドは", len(thread_urls), "件です")
 
 		if next_url == "" {
@@ -61,9 +67,9 @@ func main() {
 	for _, u := range thread_urls {
 		get_thread_count++
 		comm_map, _, _ := ThreadGetText(BASE_URL + u)
-		time.Sleep(1)
+		time.Sleep(5 * time.Second)
 		np := ThreadGetNext(BASE_URL + u)
-		time.Sleep(1)
+		time.Sleep(5 * time.Second)
 		fmt.Println("[main]", comm_map)
 		appendtext = append(appendtext, comm_map)
 
@@ -118,8 +124,9 @@ func Threadichiran(turl string) []string {
 	return thread_urls
 }
 
-func ThreadGetText(thread_parse_url string) ([]map[int]string, string, string) {
+func ThreadGetText(thread_parse_url string) ([]map[int]string, string, string) { // TODO interfaceにする
 	res, err := http.Get(thread_parse_url)
+	time.Sleep(5 * time.Second)
 
 	if err != nil {
 		log.Fatal(err)
@@ -139,7 +146,7 @@ func ThreadGetText(thread_parse_url string) ([]map[int]string, string, string) {
 	var m_comm []map[int]string
 
 	shop_title := response.Find(".title_thr_wrap ").Text()
-	comment := response.Find(".article > .body > .resbody")
+	comment := response.Find(".article")
 
 	comment.Each(func(index int, item *goquery.Selection) {
 		comment := item.Text()
@@ -174,6 +181,8 @@ func ThreadGetText(thread_parse_url string) ([]map[int]string, string, string) {
 
 func ThreadGetNext(thread_parse_url string) string {
 	res, err := http.Get(thread_parse_url)
+	time.Sleep(5 * time.Second)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -199,6 +208,8 @@ func ThreadGetNext(thread_parse_url string) string {
 func ThreadichiranNextURL(nexts string) string {
 
 	res, err := http.Get(nexts)
+	time.Sleep(5 * time.Second)
+
 	if err != nil {
 		log.Fatal(err)
 	}
